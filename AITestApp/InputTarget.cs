@@ -1,9 +1,11 @@
-﻿namespace AITestApp
+﻿using System.Collections;
+
+namespace AITestApp
 {
     public class InputTarget
     {
-        public double[] Input;
-        public double Target;
+        public double[] Input { get; }
+        public double Target { get; }
 
         public InputTarget(double[] input, double target)
         {
@@ -15,5 +17,8 @@
             Input = input;
             Target = target;
         }
-    }
+
+        public override bool Equals(object obj) => obj is InputTarget it && StructuralComparisons.StructuralEqualityComparer.Equals(Input, it.Input) && Target == it.Target;
+        public override int GetHashCode() => HashCode.Combine(StructuralComparisons.StructuralEqualityComparer.GetHashCode(Input), Target);
+    } 
 }

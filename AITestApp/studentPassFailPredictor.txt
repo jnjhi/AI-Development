@@ -1,0 +1,87 @@
+﻿static void Main(string[] args)
+        {
+            double[] weights = {0.5, 0.5, 0.5, 0.5};
+            double learningSpeed = 0.0001;
+            double bias = 0.5;
+
+            // -------------------------------------------------------------------------
+            // Feature order for each double[]:
+            // [ 0] Study-hours per day   (0–1 scale, 1 ≈ 10+ hrs)
+            // [ 1] Attendance rate       (0–1)
+            // [ 2] Average quiz score    (0–1)
+            // [ 3] Assignment ratio      (0–1)
+            // -------------------------------------------------------------------------
+
+            List<InputTarget> InputTargetPair = new List<InputTarget>();
+
+            // Student studies a lot, perfect attendance, high quiz scores → should pass
+            InputTargetPair.Add(new InputTarget(new double[] { 0.9, 0.95, 0.85, 1.0 }, 1));
+            // Student makes a moderate effort, mixed scores and attendance → should fail
+            InputTargetPair.Add(new InputTarget(new double[] { 0.3, 0.5, 0.4, 0.6 }, 0));
+            // Student is consistent and above average, good attendance → should pass
+            InputTargetPair.Add(new InputTarget(new double[] { 0.7, 0.8, 0.6, 0.9 }, 1));
+            // Student does very little across the board → should fail
+            InputTargetPair.Add(new InputTarget(new double[] { 0.1, 0.3, 0.2, 0.2 }, 0));
+            // Hard-working but low quiz scores → borderline pass
+            InputTargetPair.Add(new InputTarget(new[] { 0.8, 0.9, 0.45, 0.95 }, 1));
+            // Decent study hours, average attendance, decent quizzes → likely pass
+            InputTargetPair.Add(new InputTarget(new[] { 0.7, 0.7, 0.6, 0.8 }, 1));
+            // Good attendance but minimal study time → likely fail
+            InputTargetPair.Add(new InputTarget(new[] { 0.2, 0.9, 0.3, 0.4 }, 0));
+            // High quizzes but skips class often → uncertain, call fail
+            InputTargetPair.Add(new InputTarget(new[] { 0.6, 0.3, 0.85, 0.6 }, 0));
+            // Very balanced mid-range record → borderline pass
+            InputTargetPair.Add(new InputTarget(new[] { 0.55, 0.6, 0.55, 0.65 }, 1));
+            // Low everything except assignments done → still fail
+            InputTargetPair.Add(new InputTarget(new[] { 0.25, 0.2, 0.3, 0.8 }, 0));
+            // Strong effort but spotty assignments → leaning pass
+            InputTargetPair.Add(new InputTarget(new[] { 0.85, 0.85, 0.75, 0.6 }, 1));
+            // Very poor attendance, otherwise okay → fail
+            InputTargetPair.Add(new InputTarget(new[] { 0.6, 0.1, 0.6, 0.7 }, 0));
+            // Excellent quizzes, moderate effort overall → pass
+            InputTargetPair.Add(new InputTarget(new[] { 0.6, 0.6, 0.9, 0.7 }, 1));
+            // Almost no study, low scores, medium attendance → fail
+            InputTargetPair.Add(new InputTarget(new[] { 0.15, 0.5, 0.25, 0.3 }, 0));
+
+            double error = 0;
+            double WeightGradient = 0;
+            double BiasGradient = 0;
+
+            for (int i = 0; i < 1000000; i++)
+            {
+                foreach (var pair in InputTargetPair)
+                {
+                    var prediction = sigmoid(DotProduct(pair.Input , weights) + bias);
+                    error = prediction - pair.Target;
+
+                    for (int j = 0; j < weights.Length; j++)
+                    {
+                        WeightGradient = CalculateGradientCrossEntropy(error, pair.Input[j]);
+                        weights[j] -= WeightGradient * learningSpeed;
+                    }
+
+                    BiasGradient = CalculateGradientCrossEntropy(error, 1);
+                    bias -= BiasGradient * learningSpeed;
+                }
+            }
+
+            Console.WriteLine("weight: " + ArrayToString(weights));
+            Console.WriteLine("Bias: " + bias);
+            Console.WriteLine("Final Results After Training:");
+
+            foreach (var pair in InputTargetPair)
+            {
+                double[] input = pair.Input;
+                double target = pair.Target;
+                double prediction = sigmoid(DotProduct(pair.Input, weights) + bias);
+                double err = ((target - prediction) * (target - prediction)) / 2;
+
+                Console.WriteLine($"Input: {ArrayToString(input)}, Target: {target}, Prediction: {prediction:F4}, Error: {err:F4}");
+            }
+
+            // ------------- EXTRA TEST CASE ------------------------------------
+            double[] ambiguous = { 0.9, 0.45, 0.5, 0.45 };   // close to the “border”
+            double ambPred = sigmoid(DotProduct(ambiguous, weights) + bias);
+            Console.WriteLine("\nAmbiguous sample:");
+            Console.WriteLine($"Input: {ArrayToString(ambiguous)},  Predicted pass-probability: {ambPred:F4}");
+        }
